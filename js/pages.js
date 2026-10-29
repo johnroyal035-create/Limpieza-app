@@ -8,7 +8,7 @@ import { rerender, go, jobCard, applyChrome } from './app.js';
 import { budgetCard } from './presupuestos.js';
 import { docCard } from './documentos.js';
 
-const APP_VERSION = '1.2.2';
+const APP_VERSION = '1.2.3';
 
 // ---------- small form helpers ----------
 const sInput = (path, { type = 'number', rate = false, step = 'any', label, suffix = '' } = {}) => {
@@ -385,7 +385,7 @@ function renderSettings() {
   return `<h1>${t('sec.settings')}</h1>
   <section class="card"><h3>${t('set.business')}</h3>
     ${sInput(`${b}.name`, { type: 'text', label: t('set.bizName') })}${sInput(`${b}.address`, { type: 'text', label: t('c.address') })}
-    ${sInput(`${b}.ownerName`, { type: 'text', label: t('set.ownerName') })}${sInput(`${b}.taxId`, { type: 'text', label: t('set.nie') })}${sInput(`${b}.ssNumber`, { type: 'text', label: t('set.ssNumber') })}${sInput(`${b}.iban`, { type: 'text', label: t('set.iban') })}
+    ${sInput(`${b}.taxId`, { type: 'text', label: t('set.nie') })}${sInput(`${b}.ssNumber`, { type: 'text', label: t('set.ssNumber') })}${sInput(`${b}.iban`, { type: 'text', label: t('set.iban') })}
     <p class="small muted">${t('set.ownerHelp')}</p>${sInput(`${b}.phone`, { type: 'tel', label: t('c.phone') })}
     ${sInput(`${b}.email`, { type: 'email', label: t('c.email') })}${sInput(`${b}.web`, { type: 'text', label: t('set.web') })}
     ${sInput(`${b}.validityDays`, { label: t('set.validity'), step: 1 })}

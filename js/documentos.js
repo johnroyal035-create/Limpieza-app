@@ -133,7 +133,7 @@ function valueFor(f, x, d) {
   const L = f.label;
   if (f.block === 'meta' && f.i === 0) return d.number;
   if (f.role === 'issuer') {
-    if (L === 'Owner / legal name') return B.ownerName || '';
+    if (L === 'Owner / legal name') return B.name || '';
     if (L === 'NIF/NIE/CIF') return B.taxId || '';
     if (L === 'Tax address') return B.address || '';
     if (L === 'Phone') return B.phone || f.def;
@@ -225,7 +225,7 @@ function renderHub() {
   const list = [...S.docs].filter((d) => !x || (p.job && d.jobId === p.job) || (p.budget && d.budgetId === p.budget) || (x.customerId && d.customerId === x.customerId)).sort((a, b) => ((a.updatedAt || '') < (b.updatedAt || '') ? 1 : -1));
   return `<h1>📁 ${t('sec.docs')}</h1>
   ${x ? `<div class="card"><p class="small">${t('d.for', { name: `<b>${esc(x.name || x.source || '')}</b>` })}${x.source && x.source !== x.name ? ` · ${esc(x.source)}` : ''}</p><p class="small muted">${t('d.forHelp')}</p></div>` : `<p class="small muted">${t('d.intro')}</p>`}
-  ${S.settings.business.ownerName || S.settings.business.ssNumber ? '' : `<a class="card warn-card" href="#/settings"><p class="small">${t('d.ownerMissing')}</p><b>${t('d.ownerAdd')} ›</b></a>`}
+  ${S.settings.business.taxId || S.settings.business.ssNumber ? '' : `<a class="card warn-card" href="#/settings"><p class="small">${t('d.ownerMissing')}</p><b>${t('d.ownerAdd')} ›</b></a>`}
   <h2>${t('d.new')}</h2>
   <div class="grid">${DOCS.es.map((dt) => `<button class="grid-item" data-act="dNew" data-type="${dt.n}" data-q="${esc(q.toString())}"><span class="ico">${DOC_ICONS[dt.n - 1]}</span><span>${esc(docTitle(dt.n))}</span></button>`).join('')}</div>
   <h2>${t('d.saved')}</h2>
