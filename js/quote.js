@@ -1,5 +1,5 @@
 // Customer quotations: preview, owner approval, PDF export, sharing and printing.
-import { S, t, L, svcName, money, num, hrs, dur, area, date, esc, toast, saveJob, nextQuoteRef, summarise, taskLabel, checkText, shareOrDownload, lang, withLang, customerLang, languages, isRtl, dirOf } from './core.js';
+import { S, t, L, svcName, money, num, hrs, dur, area, date, esc, toast, saveJob, nextQuoteRef, summarise, taskLabel, checkText, shareOrDownload, lang, withLang, customerLang, languages, isRtl, dirOf, ownerLine } from './core.js';
 import { calculate } from './engine.js';
 import { FIELDS, TASK_CHECKLISTS } from './defaults.js';
 import { pricingHtml, tilesHtml, go, rerender } from './app.js';
@@ -33,7 +33,7 @@ function buildModel(job, r) {
   const lines = p.lines.map((l) => ({ label: l.label || t(l.k, { ...l.p, rate: l.p?.rate !== undefined ? money(l.p.rate) : undefined, hours: l.p?.hours !== undefined ? num(l.p.hours, 2) : undefined }), amount: l.amount }));
   return {
     lang: lang(),
-    business: { name: B.name, address: B.address, taxId: B.taxId, phone: B.phone, email: B.email, web: B.web },
+    business: { name: B.name, address: B.address, taxId: B.taxId, phone: B.phone, email: B.email, web: B.web }, owner: ownerLine(B),
     customer: { name: cust.name || '', phone: cust.phone || '', email: cust.email || '' },
     address: job.address || cust.address || '',
     service: svcName(svc), level: t('level.' + svc.level),
@@ -54,7 +54,7 @@ function previewHtml(m, opts) {
 function previewInner(m, { ref, at, draft }) {
   return `<div class="quote-doc ${draft ? 'draft' : ''}" dir="${dirOf()}" lang="${m.lang || lang()}">
     ${draft ? `<div class="watermark">${t('q.draftMark')}</div>` : ''}
-    <header><img class="q-logo" src="icons/logo-128.png" alt=""><div><h2>${esc(m.business.name)}</h2><div class="small">${esc([m.business.address, m.business.phone, m.business.email, m.business.web, m.business.taxId && `NIF/CIF: ${m.business.taxId}`].filter(Boolean).join(' · '))}</div></div></header>
+    <header><img class="q-logo" src="icons/logo-128.png" alt=""><div><h2>${esc(m.business.name)}</h2><div class="small">${esc([m.business.address, m.business.phone, m.business.email, m.business.web].filter(Boolean).join(' · '))}</div>${m.owner ? `<div class="small">${esc(m.owner)}</div>` : ''}</div></header>
     <div class="row between wrap"><h3>${t('q.title')}</h3><div class="small r">${t('q.ref')}: <b>${esc(ref || t('q.pending'))}</b><br>${t('q.date')}: ${date(at || new Date().toISOString())}<br>${t('q.validity', { n: m.validityDays })}</div></div>
     <div class="two"><div><h4>${t('customer')}</h4><p>${esc(m.customer.name) || '—'}<br>${esc(m.customer.phone)}<br>${esc(m.customer.email)}</p></div>
       <div><h4>${t('c.address')}</h4><p>${esc(m.address) || '—'}${m.jobDate ? `<br>${t('job.date')}: ${date(m.jobDate)}` : ''}</p></div></div>
@@ -206,7 +206,8 @@ function quotePdfInner(JsPDF, m, { ref, at, draft, logo }) {
   if (logo) { doc.setFillColor(255, 255, 255); doc.circle(24, 14, 11.5, 'F'); doc.addImage(logo, 'JPEG', 13.5, 3.5, 21, 21); }
   doc.setTextColor(255); doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.text(T(m.business.name), x, 13);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
-  doc.text(T([m.business.address, m.business.phone, m.business.email, m.business.web, m.business.taxId && `NIF/CIF: ${m.business.taxId}`].filter(Boolean).join('  ·  ')), x, 21, { maxWidth: W - x - 14 });
+  doc.text(T([m.business.address, m.business.phone, m.business.email, m.business.web].filter(Boolean).join('  ·  ')), x, m.owner ? 19.5 : 21, { maxWidth: W - x - 14 });
+  if (m.owner) doc.text(T(m.owner), x, 24.5, { maxWidth: W - x - 14 });
   doc.setTextColor(20);
   if (draft) { doc.saveGraphicsState?.(); doc.setTextColor(225, 232, 245); doc.setFontSize(70); doc.text(T(t('q.draftMark')), W / 2, 170, { align: 'center', angle: 35 }); doc.setTextColor(20); doc.restoreGraphicsState?.(); }
   doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.text(T(t('q.title')), 14, 40);

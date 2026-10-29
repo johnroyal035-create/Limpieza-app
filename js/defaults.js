@@ -176,7 +176,7 @@ export function defaultSettings() {
     business: {
       name: 'LIMPIEZA VITORIA ALAVA',
       address: 'Vitoria-Gasteiz, Álava, España',
-      taxId: '', phone: '', email: '', web: '',
+      taxId: '', ownerName: '', ssNumber: '', iban: '', phone: '', email: '', web: '',
       paymentTerms: '',
       conditions: '',
       validityDays: 30,

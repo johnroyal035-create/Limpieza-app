@@ -2,7 +2,7 @@
 // advance receipt, key handover, checklist, completion, incident) inside the app: filled in on the phone,
 // prefilled from a customer, a calculation or a quotation, saved on the phone and exported as PDF.
 // Wording and layout come from documentos/_generator/docs.py (see js/docs-data.js), in Spanish or English.
-import { S, t, esc, money, num, date, toast, uid, withLang, shareOrDownload, saveMeta, svcName } from './core.js';
+import { S, t, esc, money, num, date, toast, uid, withLang, shareOrDownload, saveMeta, svcName, ownerLine } from './core.js';
 import { db } from './db.js';
 import { DOCS } from './docs-data.js';
 import { jsPDF, pdfLogo, pdfText } from './quote.js';
@@ -133,6 +133,7 @@ function valueFor(f, x, d) {
   const L = f.label;
   if (f.block === 'meta' && f.i === 0) return d.number;
   if (f.role === 'issuer') {
+    if (L === 'Owner / legal name') return B.ownerName || '';
     if (L === 'NIF/NIE/CIF') return B.taxId || '';
     if (L === 'Tax address') return B.address || '';
     if (L === 'Phone') return B.phone || f.def;
@@ -154,6 +155,7 @@ function valueFor(f, x, d) {
     'Service address': x.svcAddress || x.address, 'Property address': x.svcAddress || x.address,
     'Service address (if different)': x.svcAddress && x.svcAddress !== x.address ? x.svcAddress : '',
     'Type of property': x.ptype, 'Size (m²)': x.area, m2: x.area, Rooms: x.rooms, Bathrooms: x.baths,
+    IBAN: B.iban || '',
     'Agreed price (€)': x.total ? nf(x.total) : '', Price: x.total ? nf(x.total) : '',
     'Estimated duration': x.duration, 'Estimated duration / staff': x.duration, 'No. of staff': x.staff, 'Total hours': x.hours,
     'Concept / service paid for': [x.serviceName, x.ref].filter(Boolean).join(' · '),
@@ -223,6 +225,7 @@ function renderHub() {
   const list = [...S.docs].filter((d) => !x || (p.job && d.jobId === p.job) || (p.budget && d.budgetId === p.budget) || (x.customerId && d.customerId === x.customerId)).sort((a, b) => ((a.updatedAt || '') < (b.updatedAt || '') ? 1 : -1));
   return `<h1>📁 ${t('sec.docs')}</h1>
   ${x ? `<div class="card"><p class="small">${t('d.for', { name: `<b>${esc(x.name || x.source || '')}</b>` })}${x.source && x.source !== x.name ? ` · ${esc(x.source)}` : ''}</p><p class="small muted">${t('d.forHelp')}</p></div>` : `<p class="small muted">${t('d.intro')}</p>`}
+  ${S.settings.business.ownerName || S.settings.business.ssNumber ? '' : `<a class="card warn-card" href="#/settings"><p class="small">${t('d.ownerMissing')}</p><b>${t('d.ownerAdd')} ›</b></a>`}
   <h2>${t('d.new')}</h2>
   <div class="grid">${DOCS.es.map((dt) => `<button class="grid-item" data-act="dNew" data-type="${dt.n}" data-q="${esc(q.toString())}"><span class="ico">${DOC_ICONS[dt.n - 1]}</span><span>${esc(docTitle(dt.n))}</span></button>`).join('')}</div>
   <h2>${t('d.saved')}</h2>
@@ -294,7 +297,7 @@ function sigHtml(bi, labels, d, lang) {
 function formHtml(d) {
   const dt = docType(d.type, d.lang);
   const B = S.settings.business;
-  let html = `<div class="doc-form" data-did="${d.id}" lang="${d.lang}" dir="ltr"><header><img class="q-logo" src="icons/logo-128.png" alt=""><div><h2>${esc(B.name)}</h2><div class="small">${esc(DOCS.TR[d.lang].tagline)}</div></div></header>
+  let html = `<div class="doc-form" data-did="${d.id}" lang="${d.lang}" dir="ltr"><header><img class="q-logo" src="icons/logo-128.png" alt=""><div><h2>${esc(B.name)}</h2><div class="small">${esc(DOCS.TR[d.lang].tagline)}</div>${withLang(d.lang, () => ownerLine()) ? `<div class="small">${esc(withLang(d.lang, () => ownerLine()))}</div>` : ''}</div></header>
   <div class="row between"><h2 class="dtitle">${esc(dt.title)}</h2><span class="small muted">${esc(dt.code)}</span></div>${dt.subtitle ? `<p class="small muted">${esc(dt.subtitle)}</p>` : ''}`;
   dt.body.forEach((b, bi) => {
     const k = b[0];
@@ -315,8 +318,21 @@ function hasLineTotals(d) {
   return en.body.some((b) => b[0] === 'table' && b[1].some((c) => /^Amount/.test(c[0]))) && en.body.some((b) => b[0] === 'totals');
 }
 
+// The owner's details (typed once in App settings) go into every document's empty issuer fields.
+function fillOwner(d) {
+  let n = 0;
+  walk(docType(d.type, 'en').body, (f) => {
+    if (!(f.role === 'issuer' || f.label === 'IBAN') || f.kind === 'static') return;
+    if (d.v[f.key]) return;
+    const v = valueFor(f, {}, d);
+    if (v) { d.v[f.key] = v; n++; }
+  });
+  return n;
+}
+
 function renderDoc(id) {
   if (!D || D.id !== id) D = S.docs.find((x) => x.id === id) ? JSON.parse(JSON.stringify(S.docs.find((x) => x.id === id))) : null;
+  if (D && fillOwner(D)) saveDoc(D);
   if (!D) return `<div class="card"><p>${t('notFound')}</p><a class="btn" href="#/docs">${t('sec.docs')}</a></div>`;
   const recentB = [...S.budgets].sort((a, b) => ((a.updatedAt || '') < (b.updatedAt || '') ? 1 : -1)).slice(0, 15);
   const recentJ = [...S.jobs].sort((a, b) => ((a.updatedAt || '') < (b.updatedAt || '') ? 1 : -1)).slice(0, 15);
@@ -447,7 +463,9 @@ function buildDocPdf(Js, d, { logo, blank }) {
     if (logo) { doc.setFillColor(255, 255, 255); doc.circle(22, 13, 10.5, 'F'); doc.addImage(logo, 'JPEG', 12.5, 3.5, 19, 19); }
     const x0 = logo ? 36 : ML;
     font(15, 'bold', [255, 255, 255]); doc.text(T(S.settings.business.name), x0, 12);
-    font(8.2, 'normal', [255, 255, 255]); doc.text(T(tr.tagline), x0, 18.5, { maxWidth: W - x0 - 12 });
+    const owner = ownerLine();
+    font(8.2, 'normal', [255, 255, 255]); doc.text(T(tr.tagline), x0, owner ? 17.5 : 18.5, { maxWidth: W - x0 - 12 });
+    if (owner) { font(7.8, 'normal', [255, 255, 255]); doc.text(T(owner), x0, 22.5, { maxWidth: W - x0 - 12 }); }
     y = 36;
     font(16, 'bold', NAVY);
     const tl = doc.splitTextToSize(T(dt.title.toUpperCase()), CW - 24);

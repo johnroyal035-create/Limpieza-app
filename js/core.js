@@ -150,6 +150,10 @@ export function t(key, p) {
 export const languages = () => Object.keys(DICT).map((id) => ({ id, name: DICT[id]._name }));
 // Names typed by the owner win; built-in names come from the translation files; English is the fallback.
 export const L = (obj, key) => (typeof obj === 'string' ? obj : obj ? obj[lang()] || (key && DICT[lang()]?.[key]) || obj.en || Object.values(obj)[0] : '');
+// The owner's details printed at the top of every quotation and document (typed once in App settings).
+export function ownerLine(B = S.settings.business) {
+  return [B.ownerName && `${t('own.owner')}: ${B.ownerName}`, B.taxId && `${t('own.nie')}: ${B.taxId}`, B.ssNumber && `${t('own.ss')}: ${B.ssNumber}`].filter(Boolean).join('  ·  ');
+}
 export const svcName = (s) => (s ? L(s.name, 'svc:' + s.id) : '');
 export const catName = (id) => L(S.categories.find((c) => c.id === id)?.name, 'cat:' + id) || id;
 export const profileName = (p) => (p ? L(p.name, 'rp:' + p.id) : '');

@@ -1,6 +1,6 @@
 // Calculadora de Limpieza y Presupuestos: modules, quotation form, history, rate settings and PDF.
 // All prices come from the central price list (S.tariffs) and every total from calcBudget() in tariffs.js.
-import { S, t, L, esc, money, num, date, toast, uid, saveBudget, deleteBudget, saveTariffs, saveCustomer, saveSettings, logChange, nextQuoteRef, withLang, languages, dirOf, shareOrDownload, lang, getPath, setPath } from './core.js';
+import { S, t, L, esc, money, num, date, toast, uid, saveBudget, deleteBudget, saveTariffs, saveCustomer, saveSettings, logChange, nextQuoteRef, withLang, languages, dirOf, shareOrDownload, lang, getPath, setPath, ownerLine } from './core.js';
 import { calcBudget, newBudget, makeLine, refreshPrices, snapshotSettings, AREA_KINDS, KINDS, rangeAt } from './tariffs.js';
 import { TARIFF_MODULES, defaultTariffs } from './tariffs-data.js';
 import { jsPDF, pdfLogo, pdfText, pdfLanguage, rtlPdf } from './quote.js';
@@ -345,7 +345,7 @@ export function docModel(b0) {
     const fixed = b0.priceType === 'fixed';
     const validity = b.pp.validityDays || S.tariffs.validityDays || 30;
     return {
-      dir: dirOf(), lang: b.language || 'es', business: B2,
+      dir: dirOf(), lang: b.language || 'es', business: B2, owner: ownerLine(B2),
       title: fixed ? t('b.docFixed') : r.inspection && !b.inspected ? t('b.docPreliminary') : t('b.docEstimate'),
       number: b0.number || t('b.noNumber'), issuedAt: b0.issued?.at || b0.createdAt, validity: t('b.validity', { n: validity }), status: t('b.st.' + b0.status),
       customer: [b.customer.name, b.customer.phone, b.customer.email].filter(Boolean),
@@ -380,7 +380,7 @@ export function docModel(b0) {
 function docHtml(b0) {
   const d = docModel(b0);
   return `<div class="quote-doc" dir="${d.dir}" lang="${d.lang}">
-    <header class="q-head"><img class="q-logo" src="icons/logo-128.png" alt=""><div><h2>${esc(d.business.name)}</h2><div class="small">${esc([d.business.address, d.business.phone, d.business.email].filter(Boolean).join(' · '))}</div></div></header>
+    <header class="q-head"><img class="q-logo" src="icons/logo-128.png" alt=""><div><h2>${esc(d.business.name)}</h2><div class="small">${esc([d.business.address, d.business.phone, d.business.email].filter(Boolean).join(' · '))}</div>${d.owner ? `<div class="small">${esc(d.owner)}</div>` : ''}</div></header>
     <h3>${esc(d.title)}</h3>
     <p class="small">${d.labels.number}: <b>${esc(d.number)}</b> · ${d.labels.date}: ${date(d.issuedAt)} · ${esc(d.validity)}</p>
     <div class="two"><div><b>${d.labels.customer}</b><br>${d.customer.map(esc).join('<br>') || '—'}</div><div><b>${d.labels.address}</b><br>${esc(d.address || '—')}</div></div>
@@ -415,7 +415,8 @@ async function buildPdf(b0) {
     if (logo) { doc.setFillColor(255, 255, 255); doc.circle(24, 14, 11.5, 'F'); doc.addImage(logo, 'JPEG', 13.5, 3.5, 21, 21); }
     doc.setTextColor(255); doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.text(T(d.business.name), x, 13);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
-    doc.text(T([d.business.address, d.business.phone, d.business.email, d.business.web, d.business.taxId && `NIF/CIF: ${d.business.taxId}`].filter(Boolean).join('  ·  ')), x, 21, { maxWidth: W - x - 14 });
+    doc.text(T([d.business.address, d.business.phone, d.business.email, d.business.web].filter(Boolean).join('  ·  ')), x, d.owner ? 19.5 : 21, { maxWidth: W - x - 14 });
+    if (d.owner) doc.text(T(d.owner), x, 24.5, { maxWidth: W - x - 14 });
     doc.setTextColor(20);
     doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.text(T(d.title), 14, 39, { maxWidth: W - 90 });
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);

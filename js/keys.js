@@ -1,6 +1,6 @@
 // Property access authorization and key handover form: filled in and signed on the phone,
 // written in the customer's language, saved with the job, printed or exported as PDF.
-import { S, t, esc, date, toast, saveJob, shareOrDownload, withLang, languages, dirOf, isRtl } from './core.js';
+import { S, t, esc, date, toast, saveJob, shareOrDownload, withLang, languages, dirOf, isRtl, ownerLine } from './core.js';
 import { docLang, jsPDF, pdfLogo, pdfText, pdfLanguage, rtlPdf } from './quote.js';
 import { rerender } from './app.js';
 
@@ -146,7 +146,8 @@ function buildKeyPdf(Js, d, { logo, blank }) {
     line(t('key.returnAt'), v(dateTime(d.returnAt)));
     sig(t('key.returnSig'), d.returnSig);
     doc.setFontSize(8); doc.setTextColor(120);
-    doc.text(T([B.address, B.phone, B.email, B.taxId && `NIF/CIF: ${B.taxId}`].filter(Boolean).join('  ·  ')), W / 2, 290, { align: 'center', maxWidth: W - 28 });
+    doc.text(T([B.address, B.phone, B.email].filter(Boolean).join('  ·  ')), W / 2, 286.5, { align: 'center', maxWidth: W - 28 });
+    if (ownerLine(B)) doc.text(T(ownerLine(B)), W / 2, 290.5, { align: 'center', maxWidth: W - 28 });
     return doc;
   });
 }

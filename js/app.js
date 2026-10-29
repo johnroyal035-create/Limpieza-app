@@ -29,7 +29,20 @@ const routes = {
   ...pres.routes,
   ...docs.docRoutes,
   ...search.searchRoutes,
+  'mis-datos': renderOwnerLink,
 };
+
+// A private link from the owner (#/mis-datos?nie=...&ss=...) fills their details once on this phone.
+// The part after # never reaches the web server, so the numbers are not stored online.
+function renderOwnerLink() {
+  const q = new URLSearchParams(location.hash.split('?')[1] || '');
+  const B = S.settings.business;
+  const v = { ownerName: q.get('owner') ?? B.ownerName ?? '', taxId: q.get('nie') ?? B.taxId ?? '', ssNumber: q.get('ss') ?? B.ssNumber ?? '', iban: q.get('iban') ?? B.iban ?? '' };
+  const f = (k, label) => `<label class="field"><span>${label}</span><input id="own_${k}" value="${esc(v[k])}" autocomplete="off"></label>`;
+  return `<h1>${t('d.ownerAdd')}</h1><section class="card"><p class="small muted">${t('set.ownerHelp')}</p>
+    ${f('ownerName', t('set.ownerName'))}${f('taxId', t('set.nie'))}${f('ssNumber', t('set.ssNumber'))}${f('iban', t('set.iban'))}
+    <button class="btn btn-xl" data-act="saveOwner">${t('b.save')}</button></section>`;
+}
 
 export function go(hash) { location.hash = hash; }
 
@@ -496,6 +509,13 @@ const actions = {
     Object.assign(S.settings.business, { taxId: document.getElementById('suTaxId').value.trim(), phone: document.getElementById('suPhone').value.trim(), email: document.getElementById('suEmail').value.trim() });
     await saveSettings();
     S.meta.setupDone = true; await saveMeta();
+    toast(t('saved'));
+    route();
+  },
+  async saveOwner() {
+    for (const k of ['ownerName', 'taxId', 'ssNumber', 'iban']) S.settings.business[k] = document.getElementById('own_' + k).value.trim();
+    await saveSettings();
+    history.replaceState(null, '', '#/');
     toast(t('saved'));
     route();
   },
