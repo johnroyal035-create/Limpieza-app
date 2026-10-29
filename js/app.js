@@ -8,6 +8,7 @@ import { renderMediaSection, mountMedia, mediaActions } from './media.js';
 import { renderQuote, mountQuote, quoteActions } from './quote.js';
 import { renderKeys, mountKeys, keyActions } from './keys.js';
 import { hashPin } from './backup.js';
+import { accessGate } from './access.js';
 import * as pres from './presupuestos.js';
 import * as docs from './documentos.js';
 import * as search from './search.js';
@@ -568,6 +569,7 @@ document.addEventListener('visibilitychange', () => {
 // ---------------- Boot ----------------
 async function boot() {
   try {
+    await accessGate();
     await loadAll();
     await docs.loadDocs();
   } catch (e) {

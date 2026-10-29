@@ -8,7 +8,7 @@ import { rerender, go, jobCard, applyChrome } from './app.js';
 import { budgetCard } from './presupuestos.js';
 import { docCard } from './documentos.js';
 
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.2.1';
 
 // ---------- small form helpers ----------
 const sInput = (path, { type = 'number', rate = false, step = 'any', label, suffix = '' } = {}) => {
